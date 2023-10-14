@@ -1,0 +1,6 @@
+env: "local"
+repository_path: "./repository.db"
+http_server: 
+address: "localhost:8080"
+timeout: 4s 
+idle_timeout: 30s

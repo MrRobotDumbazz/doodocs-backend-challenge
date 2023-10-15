@@ -3,11 +3,11 @@ package service
 import "doodocsbackendchallenge/internal/repository"
 
 type Service struct {
-	UploadFile
+	Upload
 }
 
 func NewServices(repositories *repository.Repository) *Service {
 	return &Service{
-		UploadFile: newUploadService(),
+		Upload: newUploadService(),
 	}
 }

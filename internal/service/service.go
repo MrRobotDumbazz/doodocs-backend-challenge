@@ -2,6 +2,8 @@ package service
 
 import "doodocsbackendchallenge/internal/config"
 
+//go:generate mockgen -source=service.go -destination=mocks/mockservice.go
+
 type Service struct {
 	File
 }

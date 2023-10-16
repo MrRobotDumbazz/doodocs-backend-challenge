@@ -7,7 +7,7 @@
     <title>Test uploading file</title>
 </head>
 <body>
-    <form action="/uploadfile" enctype="multipart/form-data" method="POST">
+    <form action="/uploadfileinarchive" enctype="multipart/form-data" method="POST">
         <label for="myFile">File archive to structure</label>
         <input id="myFile" name="myFile" type="file">
         <button>Upload</button>
@@ -20,7 +20,7 @@
     <h1>Upload a File and Enter Email Addresses</h1>
     <form action="/sendemailandfile" method="post" enctype="multipart/form-data">
         <label for="file">Select File:</label>
-        <input type="file" name="fileToGetEmail" id="ffileToGetEmail"><br><br>
+        <input type="file" name="fileToGetEmail" id="fileToGetEmail"><br><br>
         <label for="emails">Email Addresses:</label>
         <input type="text" name="emails" id="emails"><br><br>
         <input type="submit" value="Upload and Send">

@@ -6,11 +6,9 @@ import (
 	"crypto/tls"
 	"doodocsbackendchallenge/internal/config"
 	"doodocsbackendchallenge/models"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -22,6 +20,8 @@ import (
 
 	"github.com/jordan-wright/email"
 )
+
+//go:generate mockgen -source=file.go -destination=mocks/mock.go
 
 type FileService struct {
 	cfg *config.Config
@@ -55,33 +55,23 @@ func (flsrv *FileService) UploadFileGetJSON(f multipart.File, header *multipart.
 		return models.Archive{}, fmt.Errorf("%s: %w\n", op, err)
 	}
 	dest := "archive"
-	dataarchive, err := io.ReadAll(f)
-	if err != nil {
-		return models.Archive{}, fmt.Errorf("%s: %w\n", op, err)
-	}
 
 	files := []models.File{}
 	totalsizearchive := 0.0
 	if err != nil {
 		return models.Archive{}, fmt.Errorf("%s: %w\n", op, err)
 	}
-	bitsarchive := binary.LittleEndian.Uint64(dataarchive)
-	archivesizefloat := math.Float64frombits(bitsarchive)
+	archivesizefloat := float64(header.Size)
 	for _, file := range zipfile.File {
 		fp := filepath.Join(dest, file.Name)
+		if file.FileInfo().IsDir() {
+			os.MkdirAll(fp, os.ModePerm)
+			continue
+		}
+		os.MkdirAll(filepath.Dir(fp), os.ModePerm)
 		strings.HasPrefix(fp, filepath.Clean(dest)+string(os.PathSeparator))
 		mtype := mime.TypeByExtension(filepath.Ext(file.Name))
-		filereader, err := file.Open()
-		if err != nil {
-			return models.Archive{}, fmt.Errorf("%s: %w\n", op, err)
-		}
-		defer filereader.Close()
-		datafile, err := io.ReadAll(filereader)
-		if err != nil {
-			return models.Archive{}, fmt.Errorf("%s: %w\n", op, err)
-		}
-		bitsfiles := binary.LittleEndian.Uint64(datafile)
-		filesizefloat := math.Float64frombits(bitsfiles)
+		filesizefloat := float64(file.FileInfo().Size())
 		filestruct := models.File{
 			File_path: fp,
 			Size:      filesizefloat,

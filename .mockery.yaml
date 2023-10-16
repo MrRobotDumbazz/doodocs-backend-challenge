@@ -1,0 +1,18 @@
+quiet: False
+keeptree: True
+disable-version-string: True
+with-expecter: True
+dir: "mocks/doodocs-backend-challenge"
+mockname: "MockService"
+filename: "mock_service.go"
+outpkg: mocks
+packages:
+  github.com/MrRobotDumbazz/doodocs-backend-challenge:
+    interfaces:
+    Service:
+    File:
+    configs:
+    - mockname: MockUploadFileGetJson
+    - mockname: ArchiveInFiles 
+    - mockname: GetEmailsAndFileSendEmail
+    

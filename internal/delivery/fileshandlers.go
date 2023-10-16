@@ -122,7 +122,8 @@ func (h *Handler) SendEmailsAndFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer file.Close()
-		emails := strings.Split(r.FormValue("emails"), ",")
+		emails := strings.Split(r.FormValue("emails"), ", ")
+		log.Info("emails:", emails)
 		err = h.services.GetEmailsAndFileSendEmail(emails, file, fileHeader.Filename)
 		if err != nil {
 			log.Error(err.Error())

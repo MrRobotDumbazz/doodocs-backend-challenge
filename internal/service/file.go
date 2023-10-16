@@ -177,10 +177,7 @@ func (flsrv *FileService) GetEmailsAndFileSendEmail(emails []string, file io.Rea
 		if err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
-		content, err := io.ReadAll(file)
-		if err != nil {
-			return fmt.Errorf("%s: %w", op, err)
-		}
+		log.Printf("Emails:%#v", emails)
 		for _, oneemail := range emails {
 			log.Printf("email: %s\n", oneemail)
 			validEmail, err := regexp.MatchString(`[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`, oneemail)
@@ -192,12 +189,13 @@ func (flsrv *FileService) GetEmailsAndFileSendEmail(emails []string, file io.Rea
 			}
 			e := email.NewEmail()
 			log.Println()
-			e.From = "Mr.RobotDumbazz"
+			e.From = "sansskeleton415@gmail.com"
 			e.To = []string{oneemail}
 			e.Subject = "Dodocs Backend Challenge"
 			e.Text = []byte("Hello i'm testing smtp.")
 			_, fn := filepath.Split(filename)
-			e.Attach(bytes.NewReader(content), fn, "application/octet-stream")
+			log.Printf("emails %s\n", emails)
+			e.Attach(file, fn, "application/octet-stream")
 			err = e.Send(smtpstruct.smtpServer+":"+smtpstruct.smtpPort, auth)
 			if err != nil {
 				return fmt.Errorf("%s: %w", op, err)

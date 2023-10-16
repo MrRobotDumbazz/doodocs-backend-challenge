@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test uploading file</title>
+</head>
+<body>
+    <form action="/uploadfile" enctype="multipart/form-data" method="POST">
+        <label for="myFile">File archive to structure</label>
+        <input id="myFile" name="myFile" type="file">
+        <button>Upload</button>
+    </form>
+    <form action="/acrhivefiles" enctype="multipart/form-data" method="POST">
+        <label for="filestoarchive">Files in archive</label>
+        <input id="filestoarchive" name="filestoarchive" type="file" multiple>
+        <button>Upload</button>
+    </form>
+    <h1>Upload a File and Enter Email Addresses</h1>
+    <form action="/sendemailandfile" method="post" enctype="multipart/form-data">
+        <label for="file">Select File:</label>
+        <input type="file" name="fileToGetEmail" id="ffileToGetEmail"><br><br>
+        <label for="emails">Email Addresses:</label>
+        <input type="text" name="emails" id="emails"><br><br>
+        <input type="submit" value="Upload and Send">
+    </form>
+</body>
+</html>

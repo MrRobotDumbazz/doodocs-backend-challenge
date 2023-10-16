@@ -9,26 +9,12 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func (h *Handler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	const op = "handlers.uploadfile"
+func (h *Handler) UploadFileInArchive(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.uploadfileinarchive"
 	log := h.log.With(
 		slog.String("op", op),
 	)
 	switch r.Method {
-	case "GET":
-		temp, err := template.ParseFiles("templates/index.html")
-		if err != nil {
-			log.Error(err.Error())
-			render.JSON(w, r, Error(err.Error()))
-			return
-		}
-		err = temp.Execute(w, nil)
-		if err != nil {
-			log.Error(err.Error())
-			render.JSON(w, r, Error(err.Error()))
-			return
-		}
-		render.JSON(w, r, OK())
 	case "POST":
 		err := r.ParseMultipartForm(10 << 20)
 		if err != nil {

@@ -7,6 +7,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+//go:generate moq -out handler_mock_test.go . Handler
 type Handler struct {
 	services *service.Service
 	log      *slog.Logger
@@ -22,7 +23,7 @@ func NewHandler(services *service.Service, log *slog.Logger) *Handler {
 func (h *Handler) Handlers() *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/", h.Homepage)
-	r.Post("/uploadfile", h.UploadFile)
+	r.Post("/uploadfileinarchive", h.UploadFileInArchive)
 	r.Post("/acrhivefiles", h.ArchiveFiles)
 	r.Post("/sendemailandfile", h.SendEmailsAndFile)
 	return r

@@ -1,25 +1,27 @@
 package config
 
 import (
-	"log"
-	"time"
-
-	"github.com/ilyakaznacheev/cleanenv"
+	"fmt"
+	"os"
 )
 
 type Config struct {
-	Address     string        `env:"ADDRESS" env-default:"0.0.0.0:8080"`
-	Timeout     time.Duration `env:"TIMEOUT" env-default:"5s"`
-	IdleTimeout time.Duration `env:"IDLE_TIMEOUT" env-default:"60s"`
-	Email       string        `env:"EMAIL"`
-	Password    string        `env:"PASSWORD"`
+	Email    string `env:"EMAIL"`
+	Password string `env:"PASSWORD"`
 }
 
-func MustLoad() *Config {
-	cfg := Config{}
-	err := cleanenv.ReadConfig("./.env", &cfg)
-	if err != nil {
-		log.Fatalf("error reading config file: %s", err)
+func MustLoad() (*Config, error) {
+	const op = "config.MustLoad"
+	email, password := os.Getenv("EMAIL"), os.Getenv("PASSWORD")
+	if email == "" || password == "" {
+		return nil, fmt.Errorf("%s: nil email or password", op)
 	}
-	return &cfg
+	if _, err := os.Stat(email); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	cfg := Config{
+		Email:    email,
+		Password: password,
+	}
+	return &cfg, nil
 }

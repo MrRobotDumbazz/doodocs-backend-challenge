@@ -2,24 +2,23 @@ package server
 
 import (
 	"context"
-	"doodocsbackendchallenge/internal/config"
+	"fmt"
 	"net/http"
-
-	"github.com/go-chi/chi"
+	"time"
 )
 
 type Server struct {
 	srv http.Server
 }
 
-func (s *Server) Start(cfg *config.Config, handlers chi.Router) error {
+func (s *Server) Start(port string, handlers http.Handler) error {
 	s.srv = http.Server{
-		Addr:         cfg.Address,
+		Addr:         port,
 		Handler:      handlers,
-		WriteTimeout: cfg.Timeout,
-		ReadTimeout:  cfg.Timeout,
-		IdleTimeout:  cfg.IdleTimeout,
+		WriteTimeout: time.Second * 3,
+		ReadTimeout:  time.Second * 3,
 	}
+	fmt.Printf("Server starting http://localhost%s\n", port)
 	return s.srv.ListenAndServe()
 }
 

@@ -1,15 +1,13 @@
 package service
 
-import "doodocsbackendchallenge/internal/config"
-
-//go:generate mockgen -source=service.go -destination=mocks/mockservice.go
+import "log/slog"
 
 type Service struct {
 	File
 }
 
-func NewServices(cfg *config.Config) *Service {
+func NewServices(log *slog.Logger) *Service {
 	return &Service{
-		File: newFileService(cfg),
+		File: newFileService(log),
 	}
 }

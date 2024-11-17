@@ -22,5 +22,7 @@ func NewHandler(services *service.Service, log *slog.Logger) *Handler {
 func (h *Handler) Handlers() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/uploadfilearchive", h.uploadfile_inarchive)
+	mux.HandleFunc("/archivefiles", h.archive_files)
+	mux.HandleFunc("/sendemailandfile", h.sendemails_file)
 	return mux
 }

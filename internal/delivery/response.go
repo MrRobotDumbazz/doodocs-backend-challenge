@@ -23,7 +23,7 @@ func Status(r *http.Request, status int) {
 	*r = *r.WithContext(context.WithValue(r.Context(), StatusCtxKey, status))
 }
 
-func (h *Handler) EncodeJSON(w http.ResponseWriter, r *http.Request, status int, data interface{}) {
+func (h *Handler) EncodeJSON(w http.ResponseWriter, r *http.Request, status int, message string, data interface{}) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(true)

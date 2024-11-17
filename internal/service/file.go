@@ -132,7 +132,7 @@ func (flsrv *FileService) ArchiveInFiles(files []*multipart.FileHeader) (*bytes.
 	defer zipWriter.Close()
 	for _, file := range files {
 		log.Printf("%s: %s", op, filepath.Ext(file.Filename))
-		mtype := mime.TypeByExtension(filepath.Ext(file.Filename))
+		mtype := strings.Split(mime.TypeByExtension(filepath.Ext(file.Filename)), ";")[0]
 		log.Printf("%s: %s", op, mtype)
 		switch mtype {
 		case "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/xml", "image/jpeg", "image/png":

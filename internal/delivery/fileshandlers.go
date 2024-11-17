@@ -32,7 +32,7 @@ func (h *Handler) UploadFileInArchive(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.EncodeJSON(w, r, http.StatusOK, archive)
-		log.Info("archive", archive)
+		log.Debug("archive", archive)
 	default:
 		h.EncodeJSON(w, r, http.StatusMethodNotAllowed, nil)
 	}

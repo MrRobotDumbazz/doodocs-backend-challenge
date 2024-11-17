@@ -3,6 +3,7 @@ package service
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -10,27 +11,34 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/smtp"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
+	"doodocsbackendchallenge/internal/config"
 	"doodocsbackendchallenge/models"
 
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/jordan-wright/email"
 )
 
 type FileService struct {
 	log *slog.Logger
+	cfg config.Config
 }
 
 type File interface {
 	UploadFileGetJSON(f multipart.File, header *multipart.FileHeader) (models.Archive, error)
 	ArchiveInFiles(files []*multipart.FileHeader) (*bytes.Buffer, error)
+	GetEmailAndFileSendEmail(emails []string, file io.Reader, filename string) error
 }
 
-func newFileService(log *slog.Logger) *FileService {
+func newFileService(log *slog.Logger, cfg config.Config) *FileService {
 	return &FileService{
 		log: log,
+		cfg: cfg,
 	}
 }
 
@@ -155,4 +163,90 @@ func (flsrv *FileService) ArchiveInFiles(files []*multipart.FileHeader) (*bytes.
 		return nil, fmt.Errorf("%s: %w\n", op, err)
 	}
 	return buf, nil
+}
+
+func (flsrv *FileService) GetEmailAndFileSendEmail(emails []string, file io.Reader, filename string) error {
+	mtype := mime.TypeByExtension(filepath.Ext(filename))
+	const op = "service.getemailsandfilesendemail"
+	switch mtype {
+	case "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/pdf":
+		smtpstruct := struct {
+			smtpServer string
+			smtpPort   string
+		}{
+			smtpServer: "smtp.gmail.com",
+			smtpPort:   "587",
+		}
+		auth, err := startsmtp(smtpstruct, flsrv.cfg)
+		if err != nil {
+			log.Printf("%s: %v\n", op, err)
+			return fmt.Errorf("%s: %v\n", op, err)
+		}
+
+		if err := getemail(emails, smtpstruct, filename, file, auth); err != nil {
+			log.Printf("%s: %v\n", op, err)
+			return fmt.Errorf("%s: %v\n", op, err)
+		}
+	}
+	return nil
+}
+
+func startsmtp(smtpstruct struct {
+	smtpServer string
+	smtpPort   string
+},
+	config config.Config,
+) (smtp.Auth, error) {
+	auth := smtp.PlainAuth("", config.Email, config.Password, smtpstruct.smtpServer)
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: false,
+		ServerName:         smtpstruct.smtpServer,
+	}
+	client, err := smtp.Dial(smtpstruct.smtpServer + ":" + smtpstruct.smtpPort)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Quit()
+	err = client.StartTLS(tlsConfig)
+	if err != nil {
+		return nil, err
+	}
+	err = client.Auth(auth)
+	if err != nil {
+		return nil, err
+	}
+	return auth, nil
+}
+
+func getemail(emails []string,
+	smtpstruct struct {
+		smtpServer string
+		smtpPort   string
+	},
+	filename string, file io.Reader, auth smtp.Auth,
+) error {
+	for _, oneemail := range emails {
+		log.Printf("email: %s\n", oneemail)
+		validEmail, err := regexp.MatchString(`[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`, oneemail)
+		if err != nil {
+			return err
+		}
+		if !validEmail {
+			return fmt.Errorf("wrong email")
+		}
+		e := email.NewEmail()
+		log.Println()
+		e.From = "sansskeleton415@gmail.com"
+		e.To = []string{oneemail}
+		e.Subject = "Doodocs Backend Challenge"
+		e.Text = []byte("Hello i'm testing smtp.")
+		_, fn := filepath.Split(filename)
+		log.Printf("Emails %s\n", emails)
+		e.Attach(file, fn, "application/octet-stream")
+		err = e.Send(smtpstruct.smtpServer+":"+smtpstruct.smtpPort, auth)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

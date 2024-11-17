@@ -16,9 +16,6 @@ func MustLoad() (*Config, error) {
 	if email == "" || password == "" {
 		return nil, fmt.Errorf("%s: nil email or password", op)
 	}
-	if _, err := os.Stat(email); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
 	cfg := Config{
 		Email:    email,
 		Password: password,

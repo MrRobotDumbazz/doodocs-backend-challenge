@@ -26,7 +26,7 @@ import (
 
 type FileService struct {
 	log *slog.Logger
-	cfg config.Config
+	cfg *config.Config
 }
 
 type File interface {
@@ -35,7 +35,7 @@ type File interface {
 	GetEmailAndFileSendEmail(emails []string, file io.Reader, filename string) error
 }
 
-func newFileService(log *slog.Logger, cfg config.Config) *FileService {
+func newFileService(log *slog.Logger, cfg *config.Config) *FileService {
 	return &FileService{
 		log: log,
 		cfg: cfg,
@@ -195,7 +195,7 @@ func startsmtp(smtpstruct struct {
 	smtpServer string
 	smtpPort   string
 },
-	config config.Config,
+	config *config.Config,
 ) (smtp.Auth, error) {
 	auth := smtp.PlainAuth("", config.Email, config.Password, smtpstruct.smtpServer)
 	tlsConfig := &tls.Config{

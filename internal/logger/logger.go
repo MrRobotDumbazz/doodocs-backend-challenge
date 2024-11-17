@@ -1,13 +1,12 @@
 package logger
 
 import (
+	"log/slog"
 	"os"
-
-	"golang.org/x/exp/slog"
 )
 
 func SetupLogger() *slog.Logger {
-	var log *slog.Logger
+	log := &slog.Logger{}
 	log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	return log
 }

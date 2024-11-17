@@ -10,7 +10,7 @@ type Service struct {
 	File
 }
 
-func NewServices(log *slog.Logger, cfg config.Config) *Service {
+func NewServices(log *slog.Logger, cfg *config.Config) *Service {
 	return &Service{
 		File: newFileService(log, cfg),
 	}

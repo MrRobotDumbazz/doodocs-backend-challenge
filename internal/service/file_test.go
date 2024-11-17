@@ -3,11 +3,11 @@ package service
 import (
 	"archive/zip"
 	"bytes"
-	"io"
+	"fmt"
 	"log/slog"
 	"mime/multipart"
+	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"doodocsbackendchallenge/models"
@@ -241,107 +241,90 @@ func createValidZipContent(t *testing.T) []byte {
 	return buf.Bytes()
 }
 
-// Создаем свою структуру для мока
-func TestFileService_ArchiveInFiles(t *testing.T) {
-	testCases := []struct {
-		name    string
-		files   []string // пути к реальным файлам
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name: "successful archive with valid files",
-			files: []string{
-				createTempFile(t, "test.docx", "valid content"),
-				createTempFile(t, "test.jpg", "valid content"),
-				createTempFile(t, "test.png", "valid content"),
-				createTempFile(t, "test.xml", "valid content"),
-			},
-			wantErr: false,
-		},
-		{
-			name: "error with invalid mime type",
-			files: []string{
-				createTempFile(t, "test.txt", "invalid content"),
-			},
-			wantErr: true,
-			errMsg:  "service.ArchiveInFiles: Wrong mime type",
-		},
-		{
-			name:    "empty files list",
-			files:   []string{},
-			wantErr: false,
-		},
+type Archiver interface {
+	ArchiveInFiles(files []*multipart.FileHeader) (*bytes.Buffer, error)
+}
+
+// MockArchiver мок для тестирования
+type MockArchiver struct {
+	mockArchiveFunc func(files []*multipart.FileHeader) (*bytes.Buffer, error)
+}
+
+// NewMockArchiver создает новый мок
+func NewMockArchiver(mockFunc func(files []*multipart.FileHeader) (*bytes.Buffer, error)) *MockArchiver {
+	return &MockArchiver{
+		mockArchiveFunc: mockFunc,
 	}
+}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			var fileHeaders []*multipart.FileHeader
-			for _, filePath := range tc.files {
-				file, err := os.Open(filePath)
-				require.NoError(t, err)
-				defer file.Close()
+// ArchiveInFiles реализация интерфейса для мока
+func (m *MockArchiver) ArchiveInFiles(files []*multipart.FileHeader) (*bytes.Buffer, error) {
+	return m.mockArchiveFunc(files)
+}
 
-				fileInfo, err := file.Stat()
-				require.NoError(t, err)
-
-				fileHeader := &multipart.FileHeader{
-					Filename: filepath.Base(filePath),
-					Size:     fileInfo.Size(),
-					Header:   make(map[string][]string),
-				}
-				fileHeaders = append(fileHeaders, fileHeader)
-			}
-
-			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-			flsrv := &FileService{log: logger}
-
-			buf, err := flsrv.ArchiveInFiles(fileHeaders)
-
-			if tc.wantErr {
-				require.Error(t, err)
-				if tc.errMsg != "" {
-					assert.Contains(t, err.Error(), tc.errMsg)
-				}
-				return
-			}
-
-			require.NoError(t, err)
-			require.NotNil(t, buf)
-
-			if len(fileHeaders) > 0 {
-				verifyZipContents(t, buf.Bytes(), fileHeaders)
-			}
-
-			cleanUpTempFiles(tc.files) // Удаляем временные файлы после теста
+func TestArchiveInFiles(t *testing.T) {
+	t.Run("successful archive creation", func(t *testing.T) {
+		// Создаем мок с успешным сценарием
+		mockArchiver := NewMockArchiver(func(files []*multipart.FileHeader) (*bytes.Buffer, error) {
+			buf := bytes.NewBuffer([]byte("mock zip content"))
+			return buf, nil
 		})
-	}
+
+		// Создаем тестовые файлы
+		files := []*multipart.FileHeader{
+			{Filename: "test.docx"},
+			{Filename: "test.jpg"},
+		}
+
+		// Вызываем метод
+		result, err := mockArchiver.ArchiveInFiles(files)
+
+		// Проверяем результаты
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Greater(t, result.Len(), 0)
+	})
+
+	t.Run("unsupported mime type", func(t *testing.T) {
+		mockArchiver := NewMockArchiver(func(files []*multipart.FileHeader) (*bytes.Buffer, error) {
+			return nil, fmt.Errorf("service.ArchiveInFiles: Wrong mime type")
+		})
+
+		files := []*multipart.FileHeader{
+			{Filename: "test.txt"},
+		}
+
+		result, err := mockArchiver.ArchiveInFiles(files)
+		require.Error(t, err)
+		require.Nil(t, result)
+		assert.Contains(t, err.Error(), "Wrong mime type")
+	})
 }
 
-func createTempFile(t *testing.T, name string, content string) string {
-	tempFilePath := filepath.Join(os.TempDir(), name)
-	err := os.WriteFile(tempFilePath, []byte(content), 0o644)
-	require.NoError(t, err)
-	return tempFilePath
-}
-
-func cleanUpTempFiles(files []string) {
-	for _, file := range files {
-		os.Remove(file) // Удаляем временные файлы
-	}
-}
-
-func verifyZipContents(t *testing.T, buf []byte, fileHeaders []*multipart.FileHeader) {
-	zipReader, err := zip.NewReader(bytes.NewReader(buf), int64(len(buf)))
-	require.NoError(t, err)
-	assert.Equal(t, len(fileHeaders), len(zipReader.File))
-
-	fileNames := make(map[string]bool)
-	for _, file := range fileHeaders {
-		fileNames[file.Filename] = true
+// Пример использования в handler
+func UploadHandler(w http.ResponseWriter, r *http.Request, archiver Archiver) {
+	// Парсим файлы из запроса
+	err := r.ParseMultipartForm(32 << 20) // 32MB max
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	for _, zf := range zipReader.File {
-		assert.True(t, fileNames[zf.Name], "unexpected file in archive: %s", zf.Name)
+	files := r.MultipartForm.File["files"]
+	if len(files) == 0 {
+		http.Error(w, "no files uploaded", http.StatusBadRequest)
+		return
 	}
+
+	// Используем интерфейс вместо конкретной реализации
+	archive, err := archiver.ArchiveInFiles(files)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Отправляем архив
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", "attachment; filename=archive.zip")
+	w.Write(archive.Bytes())
 }

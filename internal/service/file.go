@@ -23,7 +23,10 @@ type FileService struct {
 	log *slog.Logger
 }
 
-type File interface{}
+type File interface {
+	UploadFileGetJSON(f multipart.File, header *multipart.FileHeader) (models.Archive, error)
+	ArchiveInFiles(files []*multipart.FileHeader) (*bytes.Buffer, error)
+}
 
 func newFileService(log *slog.Logger) *FileService {
 	return &FileService{
@@ -120,7 +123,9 @@ func (flsrv *FileService) ArchiveInFiles(files []*multipart.FileHeader) (*bytes.
 	zipWriter := zip.NewWriter(buf)
 	defer zipWriter.Close()
 	for _, file := range files {
+		log.Printf("%s: %s", op, filepath.Ext(file.Filename))
 		mtype := mime.TypeByExtension(filepath.Ext(file.Filename))
+		log.Printf("%s: %s", op, mtype)
 		switch mtype {
 		case "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/xml", "image/jpeg", "image/png":
 			src, err := file.Open()
@@ -144,6 +149,10 @@ func (flsrv *FileService) ArchiveInFiles(files []*multipart.FileHeader) (*bytes.
 		default:
 			return nil, fmt.Errorf("%s: %s\n", op, "Wrong mime type")
 		}
+	}
+	if err := zipWriter.Close(); err != nil {
+		log.Printf("%s: %v", op, err)
+		return nil, fmt.Errorf("%s: %w\n", op, err)
 	}
 	return buf, nil
 }

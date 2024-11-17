@@ -59,10 +59,11 @@ func (h *Handler) archive_files(w http.ResponseWriter, r *http.Request) {
 			h.EncodeJSON(w, r, http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
-		h.EncodeJSON(w, r, http.StatusOK, "", nil)
+
 		w.Header().Set("Content-Type", "application/zip")
 		w.Header().Set("Content-Diposition", "attachment; filename=archive.zip")
 		w.Write(buf.Bytes())
+		h.EncodeJSON(w, r, http.StatusOK, "", nil)
 
 	default:
 		h.EncodeJSON(w, r, http.StatusMethodNotAllowed, "", nil)
